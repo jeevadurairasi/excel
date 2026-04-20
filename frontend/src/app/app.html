@@ -1,0 +1,213 @@
+<div class="container">
+  <!-- HEADER -->
+  <header class="header">
+    <h1>📊 Excel to MySQL Dashboard</h1>
+    <p>Upload, manage, and filter data from multiple Excel sheets</p>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button 
+      [class.active]="activeTab === 'upload'" 
+      (click)="activeTab = 'upload'"
+      class="tab-btn">
+      📤 Upload Files
+    </button>
+    <button 
+      [class.active]="activeTab === 'view'" 
+      (click)="activeTab = 'view'"
+      class="tab-btn">
+      📋 View & Filter
+    </button>
+  </div>
+
+  <!-- UPLOAD TAB -->
+  <div *ngIf="activeTab === 'upload'" class="tab-content upload-tab">
+    <div class="upload-grid">
+      <!-- SHEET 1 CARD -->
+      <div class="upload-card">
+        <div class="card-title-bar">
+          <h3>📁 Sheet 1: ILO / Controller Data</h3>
+          <span *ngIf="uploadSuccess1" class="badge success">✅ Uploaded</span>
+        </div>
+
+        <p class="card-desc">
+          <strong>Expected Columns:</strong><br>
+          ILO_IP • Platform • Controller_Name • Model_Number • Serial_NumberA • Drive_Description
+        </p>
+
+        <label class="file-input-label" [class.uploading]="uploadingSheet1">
+          <input 
+            type="file" 
+            accept=".xlsx,.xls,.csv"
+            (change)="onFileSelectedSheet1($event)"
+            [disabled]="uploadingSheet1"
+            class="file-input"/>
+          <span class="label-text">
+            <span *ngIf="!uploadingSheet1">📁 Choose Excel File</span>
+            <span *ngIf="uploadingSheet1">⏳ Uploading...</span>
+          </span>
+        </label>
+
+        <div *ngIf="uploadSuccess1" class="success-msg">
+          {{ uploadMessage1 }}
+        </div>
+
+        <div *ngIf="sheetOneData.length > 0" class="data-info">
+          <span class="info-badge">✓ {{ sheetOneData.length }} records loaded</span>
+        </div>
+      </div>
+
+      <!-- SHEET 2 CARD -->
+      <div class="upload-card">
+        <div class="card-title-bar">
+          <h3>📁 Sheet 2: HPE Module Data</h3>
+          <span *ngIf="uploadSuccess2" class="badge success">✅ Uploaded</span>
+        </div>
+
+        <p class="card-desc">
+          <strong>Expected Columns:</strong><br>
+          BOX NO • Vender Name • Program Name • HPE Part no • HPE Module No • Supplier Model Number • Supplier Part Number • serial no • Description • DSFW
+        </p>
+
+        <label class="file-input-label" [class.uploading]="uploadingSheet2">
+          <input 
+            type="file" 
+            accept=".xlsx,.xls,.csv"
+            (change)="onFileSelectedSheet2($event)"
+            [disabled]="uploadingSheet2"
+            class="file-input"/>
+          <span class="label-text">
+            <span *ngIf="!uploadingSheet2">📁 Choose Excel File</span>
+            <span *ngIf="uploadingSheet2">⏳ Uploading...</span>
+          </span>
+        </label>
+
+        <div *ngIf="uploadSuccess2" class="success-msg">
+          {{ uploadMessage2 }}
+        </div>
+
+        <div *ngIf="sheetTwoData.length > 0" class="data-info">
+          <span class="info-badge">✓ {{ sheetTwoData.length }} records loaded</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW & FILTER TAB -->
+  <div *ngIf="activeTab === 'view'" class="tab-content view-tab">
+    <!-- SEARCH BOX -->
+    <div class="search-box">
+      <h3>🔍 Search & Filter</h3>
+      
+      <div class="search-controls">
+        <!-- SERIAL NUMBER -->
+        <div class="control">
+          <label>🔑 Serial Number</label>
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm"
+            placeholder="e.g., SN123456"
+            (keyup.enter)="onSearch()"
+            class="input">
+        </div>
+
+        <!-- COLUMN FILTER -->
+        <div class="control">
+          <label>📋 Filter By Column</label>
+          <select [(ngModel)]="filterColumn" class="select">
+            <option value="">— Select Column —</option>
+            <option *ngFor="let col of allColumns" [value]="col">{{ col }}</option>
+          </select>
+        </div>
+
+        <!-- FILTER VALUE -->
+        <div class="control">
+          <label>🔍 Filter Value</label>
+          <input 
+            type="text" 
+            [(ngModel)]="filterValue"
+            placeholder="Enter value..."
+            (keyup.enter)="onSearch()"
+            class="input">
+        </div>
+
+        <!-- BUTTONS -->
+        <div class="buttons">
+          <button (click)="onSearch()" class="btn btn-primary">
+            🔍 Search
+          </button>
+          <button (click)="onClear()" class="btn btn-secondary">
+            ✕ Clear
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHEET 1 TABLE -->
+    <div class="table-section">
+      <div class="section-header">
+        <h3>📊 Sheet 1: ILO / Controller Data</h3>
+        <span class="row-badge">{{ sheetOneData.length }} rows</span>
+      </div>
+
+      <div class="table-container">
+        <div *ngIf="sheetOneData.length === 0" class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>No data available. Upload a file to get started!</p>
+        </div>
+
+        <table *ngIf="sheetOneData.length > 0" class="data-table">
+          <thead>
+            <tr>
+              <th *ngFor="let col of sheetOneColumns" [title]="col">
+                {{ col }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of sheetOneData">
+              <td *ngFor="let col of sheetOneColumns" 
+                  [title]="row[col] || ''">
+                {{ row[col] || '—' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SHEET 2 TABLE -->
+    <div class="table-section">
+      <div class="section-header">
+        <h3>📊 Sheet 2: HPE Module Data</h3>
+        <span class="row-badge">{{ sheetTwoData.length }} rows</span>
+      </div>
+
+      <div class="table-container">
+        <div *ngIf="sheetTwoData.length === 0" class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>No data available. Upload a file to get started!</p>
+        </div>
+
+        <table *ngIf="sheetTwoData.length > 0" class="data-table">
+          <thead>
+            <tr>
+              <th *ngFor="let col of sheetTwoColumns" [title]="col">
+                {{ col }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of sheetTwoData">
+              <td *ngFor="let col of sheetTwoColumns" 
+                  [title]="row[col] || ''">
+                {{ row[col] || '—' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
