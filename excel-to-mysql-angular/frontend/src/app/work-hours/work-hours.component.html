@@ -1,0 +1,315 @@
+<div class="container">
+  <!-- HEADER -->
+  <header class="header">
+    <h1>⏱️ Work Hours Tracking</h1>
+    <p>Track employee work hours by day, week, or custom date range</p>
+  </header>
+
+  <!-- MESSAGE -->
+  <div *ngIf="message" [class]="'message message-' + messageType">
+    {{ message }}
+  </div>
+
+  <!-- FILTER SECTION -->
+  <div class="filter-section">
+    <h2>🔍 Filter & View Options</h2>
+
+    <div class="filter-controls">
+      <!-- FILTER TYPE -->
+      <div class="control">
+        <label>📅 Filter By</label>
+        <select [(ngModel)]="filterType" (change)="onFilterChange()" class="select">
+          <option value="all">All Entries</option>
+          <option value="date-range">Date Range</option>
+          <option value="week">Week (5 Days)</option>
+        </select>
+      </div>
+
+      <!-- VIEW TYPE -->
+      <div class="control">
+        <label>📊 View As</label>
+        <select [(ngModel)]="viewType" class="select">
+          <option value="table">Table View</option>
+          <option value="summary">Summary View</option>
+        </select>
+      </div>
+
+      <!-- DATE RANGE FILTERS -->
+      <div *ngIf="filterType === 'date-range'" class="date-filters">
+        <div class="control">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="startDate" class="input">
+        </div>
+
+        <div class="control">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="endDate" class="input">
+        </div>
+
+        <div class="control">
+          <label>Employee</label>
+          <select [(ngModel)]="selectedEmployee" class="select">
+            <option value="all">All Employees</option>
+            <option *ngFor="let emp of employees" [value]="emp">{{ emp }}</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label>Work Type</label>
+          <select [(ngModel)]="selectedWorkType" class="select">
+            <option value="all">All Work Types</option>
+            <option *ngFor="let type of workTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
+
+        <button (click)="filterByDateRange()" class="btn btn-primary">
+          🔍 Filter
+        </button>
+        <button (click)="viewType === 'summary' ? loadSummary() : null" 
+                *ngIf="viewType === 'summary'" class="btn btn-info">
+          📊 Load Summary
+        </button>
+      </div>
+
+      <!-- WEEK FILTER -->
+      <div *ngIf="filterType === 'week'" class="week-filter">
+        <div class="control">
+          <label>Week Start Date (5 Days)</label>
+          <input type="date" [(ngModel)]="weekStart" class="input">
+        </div>
+
+        <button (click)="filterByWeek()" class="btn btn-primary">
+          📅 Get Week Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS SECTION -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <div class="stat-label">📝 Total Entries</div>
+      <div class="stat-value">{{ workEntries.length }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">⏱️ Total Hours</div>
+      <div class="stat-value">{{ getTotalHours().toFixed(2) }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">👥 Employees</div>
+      <div class="stat-value">{{ employees.length }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📋 Work Types</div>
+      <div class="stat-value">{{ workTypes.length }}</div>
+    </div>
+  </div>
+
+  <!-- CREATE/EDIT FORM -->
+  <div class="form-section">
+    <button (click)="toggleForm()" [class]="'btn btn-' + (showForm ? 'danger' : 'primary')">
+      {{ showForm ? '✕ Close Form' : '➕ Add Work Hours Entry' }}
+    </button>
+
+    <div *ngIf="showForm" class="form-container">
+      <h2>{{ editingId ? '✏️ Edit Entry' : '➕ Add Work Hours Entry' }}</h2>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Employee Name *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.employee_name" 
+            placeholder="e.g., Asha Berni"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Function/Role *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.function_role" 
+            placeholder="e.g., Storage NPI/Sustaining"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Location</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.location" 
+            placeholder="e.g., Bangalore, IN"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Program</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.program" 
+            placeholder="e.g., MCHP Sustaining"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Work Type *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.work_type" 
+            placeholder="e.g., Test Case Count"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Work Date *</label>
+          <input 
+            type="date" 
+            [(ngModel)]="formData.work_date"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Hours Logged *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="formData.hours_logged" 
+            step="0.5"
+            placeholder="Enter hours (e.g., 8.5)"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea 
+            [(ngModel)]="formData.description" 
+            placeholder="Additional notes..."
+            class="textarea"></textarea>
+        </div>
+      </div>
+
+      <div class="form-buttons">
+        <button (click)="saveEntry()" [disabled]="loading" class="btn btn-success">
+          {{ editingId ? '✏️ Update Entry' : '➕ Add Entry' }}
+        </button>
+        <button (click)="resetForm()" class="btn btn-secondary">
+          🔄 Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div *ngIf="viewType === 'table'" class="table-section">
+    <h2>📋 Work Hours Entries</h2>
+
+    <div *ngIf="loading" class="loading">
+      ⏳ Loading...
+    </div>
+
+    <div *ngIf="!loading && workEntries.length === 0" class="empty-state">
+      <div class="empty-icon">📭</div>
+      <p>No work hours entries found</p>
+    </div>
+
+    <div *ngIf="!loading && workEntries.length > 0" class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Employee Name</th>
+            <th>Function</th>
+            <th>Location</th>
+            <th>Program</th>
+            <th>Work Type</th>
+            <th>Date</th>
+            <th>Hours</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let entry of workEntries">
+            <td>{{ entry.id }}</td>
+            <td><strong>{{ entry.employee_name }}</strong></td>
+            <td>{{ entry.function_role }}</td>
+            <td>{{ entry.location || '—' }}</td>
+            <td>{{ entry.program || '—' }}</td>
+            <td>{{ entry.work_type }}</td>
+            <td>{{ entry.work_date }}</td>
+            <td class="hours-cell">{{ entry.hours_logged }}</td>
+            <td class="actions">
+              <button (click)="editEntry(entry)" class="btn btn-small btn-warning">✏️</button>
+              <button (click)="deleteEntry(entry.id)" class="btn btn-small btn-danger">🗑️</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SUMMARY VIEW -->
+  <div *ngIf="viewType === 'summary'" class="summary-section">
+    <h2>📊 Work Hours Summary</h2>
+
+    <div class="summary-header">
+      <div class="summary-stat">
+        <span class="label">Period:</span>
+        <span class="value">{{ startDate }} to {{ endDate }}</span>
+      </div>
+      <div class="summary-stat">
+        <span class="label">Total Hours:</span>
+        <span class="value">{{ getTotalHours().toFixed(2) }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="loading">
+      ⏳ Loading summary...
+    </div>
+
+    <div *ngIf="!loading && summary.length === 0" class="empty-state">
+      <p>No summary data available. Load data first.</p>
+    </div>
+
+    <div *ngIf="!loading && summary.length > 0" class="table-container">
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Work Type</th>
+            <th>Total Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of summary">
+            <td><strong>{{ item.employee_name }}</strong></td>
+            <td>{{ item.work_date }}</td>
+            <td>{{ item.work_type }}</td>
+            <td class="hours-cell">{{ item.total_hours }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SUMMARY BY EMPLOYEE -->
+    <div class="summary-details">
+      <h3>Hours by Employee</h3>
+      <div class="employee-summary">
+        <div *ngFor="let emp of employees" class="emp-card">
+          <div class="emp-name">{{ emp }}</div>
+          <div class="emp-hours">{{ getEmployeeHours(emp).toFixed(2) }} hrs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY BY WORK TYPE -->
+    <div class="summary-details">
+      <h3>Hours by Work Type</h3>
+      <div class="work-type-summary">
+        <div *ngFor="let type of workTypes" class="type-card">
+          <div class="type-name">{{ type }}</div>
+          <div class="type-hours">{{ getTotalHoursByType(type).toFixed(2) }} hrs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

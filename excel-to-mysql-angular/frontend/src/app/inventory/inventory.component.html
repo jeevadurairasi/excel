@@ -1,0 +1,203 @@
+<div class="container">
+  <!-- HEADER -->
+  <header class="header">
+    <h1>📦 Inventory Management</h1>
+    <p>Create, read, update, and delete inventory items with date filtering</p>
+  </header>
+
+  <!-- MESSAGE -->
+  <div *ngIf="message" [class]="'message message-' + messageType">
+    {{ message }}
+  </div>
+
+  <!-- FILTER SECTION -->
+  <div class="filter-section">
+    <h2>🔍 Filter Data</h2>
+
+    <div class="filter-controls">
+      <!-- FILTER TYPE -->
+      <div class="control">
+        <label>Filter Type</label>
+        <select [(ngModel)]="filterType" (change)="onFilterChange()" class="select">
+          <option value="all">All Items</option>
+          <option value="date-range">Date Range</option>
+          <option value="week">Week</option>
+        </select>
+      </div>
+
+      <!-- DATE RANGE FILTERS -->
+      <div *ngIf="filterType === 'date-range'" class="date-filters">
+        <div class="control">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="startDate" class="input">
+        </div>
+
+        <div class="control">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="endDate" class="input">
+        </div>
+
+        <div class="control">
+          <label>Category</label>
+          <select [(ngModel)]="selectedCategory" class="select">
+            <option value="all">All Categories</option>
+            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+
+        <button (click)="filterByDateRange()" class="btn btn-primary">
+          🔍 Filter
+        </button>
+      </div>
+
+      <!-- WEEK FILTER -->
+      <div *ngIf="filterType === 'week'" class="week-filter">
+        <div class="control">
+          <label>Week Start Date</label>
+          <input type="date" [(ngModel)]="weekStart" class="input">
+        </div>
+
+        <button (click)="filterByWeek()" class="btn btn-primary">
+          📅 Get Week Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <div class="stat-label">📊 Total Items</div>
+      <div class="stat-value">{{ inventoryItems.length }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📦 Total Quantity</div>
+      <div class="stat-value">{{ getTotalQuantity() }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">💰 Total Value</div>
+      <div class="stat-value">${{ getTotalValue().toFixed(2) }}</div>
+    </div>
+  </div>
+
+  <!-- CREATE/EDIT FORM -->
+  <div class="form-section">
+    <button (click)="toggleForm()" [class]="'btn btn-' + (showForm ? 'danger' : 'primary')">
+      {{ showForm ? '✕ Close Form' : '➕ Add New Item' }}
+    </button>
+
+    <div *ngIf="showForm" class="form-container">
+      <h2>{{ editingId ? '✏️ Edit Item' : '➕ Add New Item' }}</h2>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Item Name *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.name" 
+            placeholder="Enter item name"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea 
+            [(ngModel)]="formData.description" 
+            placeholder="Enter description"
+            class="textarea"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Quantity *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="formData.quantity" 
+            placeholder="Enter quantity"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Price *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="formData.price" 
+            step="0.01"
+            placeholder="Enter price"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.category" 
+            placeholder="Enter category"
+            class="input">
+        </div>
+
+        <div class="form-group">
+          <label>Entry Date *</label>
+          <input 
+            type="date" 
+            [(ngModel)]="formData.entry_date"
+            class="input">
+        </div>
+      </div>
+
+      <div class="form-buttons">
+        <button (click)="saveItem()" [disabled]="loading" class="btn btn-success">
+          {{ editingId ? '✏️ Update Item' : '➕ Create Item' }}
+        </button>
+        <button (click)="resetForm()" class="btn btn-secondary">
+          🔄 Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE SECTION -->
+  <div class="table-section">
+    <h2>📋 Inventory Items</h2>
+
+    <div *ngIf="loading" class="loading">
+      ⏳ Loading...
+    </div>
+
+    <div *ngIf="!loading && inventoryItems.length === 0" class="empty-state">
+      <div class="empty-icon">📭</div>
+      <p>No inventory items found</p>
+    </div>
+
+    <div *ngIf="!loading && inventoryItems.length > 0" class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total Value</th>
+            <th>Entry Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of inventoryItems">
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.category || '—' }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.price.toFixed(2) }}</td>
+            <td>${{ (item.quantity * item.price).toFixed(2) }}</td>
+            <td>{{ item.entry_date }}</td>
+            <td class="actions">
+              <button (click)="editItem(item)" class="btn btn-small btn-warning">✏️</button>
+              <button (click)="deleteItem(item.id)" class="btn btn-small btn-danger">🗑️</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,174 @@
+<div class="container">
+  <!-- HEADER -->
+  <header class="header">
+    <h1>⏱️ Weekly Work Hours Spreadsheet</h1>
+    <p>Track 8 work types across 5 days per employee (Monday - Friday)</p>
+  </header>
+
+  <!-- MESSAGE -->
+  <div *ngIf="message" [class]="'message message-' + messageType">
+    {{ message }}
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls-section">
+    <h2>📅 Select Week</h2>
+
+    <div class="controls-grid">
+      <div class="control">
+        <label>Week Start Date</label>
+        <input 
+          type="date" 
+          [(ngModel)]="weekStart" 
+          (change)="loadSpreadsheet()"
+          class="input">
+        <small>Week: {{ weekStart }} to {{ getWeekEndDate() }}</small>
+      </div>
+
+      <div class="button-group">
+        <button (click)="getPreviousWeek()" class="btn btn-secondary">
+          ◀ Previous Week
+        </button>
+        <button (click)="loadSpreadsheet()" class="btn btn-primary">
+          🔄 Reload
+        </button>
+        <button (click)="getNextWeek()" class="btn btn-secondary">
+          Next Week ▶
+        </button>
+      </div>
+
+      <div class="control">
+        <button (click)="addNewEmployee()" class="btn btn-success">
+          ➕ Add Employee
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div *ngIf="loading" class="loading">
+    ⏳ Loading spreadsheet...
+  </div>
+
+  <!-- SPREADSHEET TABLE -->
+  <div *ngIf="!loading && employees.length > 0" class="spreadsheet-wrapper">
+    <div class="spreadsheet-container">
+      <table class="spreadsheet-table">
+        <!-- HEADER ROW -->
+        <thead>
+          <tr>
+            <th class="work-type-header">Work Type</th>
+            <th *ngFor="let emp of employees" class="employee-header">
+              {{ emp }}
+            </th>
+            <th class="type-total-header">Type Total</th>
+          </tr>
+
+          <!-- DATE SUB-HEADER -->
+          <tr class="date-header-row">
+            <th class="work-type-header">
+              <small>5-Day Week</small>
+            </th>
+            <th *ngFor="let emp of employees" class="employee-header">
+              <div class="date-columns">
+                <div *ngFor="let date of dates" class="date-col-header">
+                  {{ formatDate(date) }}
+                </div>
+              </div>
+            </th>
+            <th class="type-total-header"></th>
+          </tr>
+        </thead>
+
+        <!-- DATA ROWS -->
+        <tbody>
+          <tr *ngFor="let workType of spreadsheetData" class="data-row">
+            <td class="work-type-cell">
+              <strong>{{ workType.work_type }}</strong>
+            </td>
+
+            <td *ngFor="let emp of employees" class="employee-data-cell">
+              <div class="date-columns">
+                <input 
+                  *ngFor="let date of dates"
+                  type="number" 
+                  [value]="workType.employees[emp][date] || 0"
+                  (change)="onCellChange(workType.work_type, emp, date, $event.target.value)"
+                  step="0.5"
+                  min="0"
+                  class="cell-input"
+                  [title]="emp + ' - ' + date">
+              </div>
+            </td>
+
+            <td class="type-total-cell">
+              <strong>{{ getTotalHoursForWorkType(workType.work_type).toFixed(1) }}</strong>
+            </td>
+          </tr>
+
+          <!-- GRAND TOTALS ROW -->
+          <tr class="grand-totals-row">
+            <td class="work-type-cell">
+              <strong>Daily Totals</strong>
+            </td>
+
+            <td *ngFor="let emp of employees" class="employee-data-cell">
+              <div class="date-columns">
+                <div *ngFor="let date of dates" class="daily-total">
+                  <strong>{{ getTotalHoursForDate(spreadsheetData[0]?.work_type, date).toFixed(1) }}</strong>
+                </div>
+              </div>
+            </td>
+
+            <td class="grand-total-cell">
+              <strong>{{ getGrandTotal().toFixed(1) }}</strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- EMPLOYEE TOTALS (SIDE SUMMARY) -->
+    <div class="employee-totals-section">
+      <h3>👥 Employee Weekly Totals</h3>
+      <div class="employee-totals-grid">
+        <div *ngFor="let emp of employees" class="emp-total-card">
+          <div class="emp-name">{{ emp }}</div>
+          <div class="emp-total-hours">
+            {{ this.spreadsheetData.reduce((sum, wt) => sum + getTotalHoursForEmployee(wt.work_type, emp), 0).toFixed(1) }}
+          </div>
+          <span>hours</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div *ngIf="!loading && employees.length === 0" class="empty-state">
+    <div class="empty-icon">📭</div>
+    <p>No data for this week. Start adding employees!</p>
+    <button (click)="addNewEmployee()" class="btn btn-primary">
+      ➕ Add First Employee
+    </button>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item">
+      <span class="legend-label">📋 Work Types:</span>
+      <span>{{ workTypesList.length }} fixed types (rows)</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-label">👥 Employees:</span>
+      <span>{{ employees.length }} (columns)</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-label">📅 Period:</span>
+      <span>5 days (Mon-Fri)</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-label">💾 Auto-Save:</span>
+      <span>Each cell saves immediately</span>
+    </div>
+  </div>
+</div>
