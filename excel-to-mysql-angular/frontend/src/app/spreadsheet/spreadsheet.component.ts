@@ -214,6 +214,14 @@ export class SpreadsheetComponent implements OnInit {
     if (!row) return 0;
     return this.dates.reduce((sum, date) => sum + (row.employees[employee][date] || 0), 0);
   }
+      // ==================== GET EMPLOYEE TOTAL HOURS (Sum across all work types) ====================
+    getEmployeeTotalHours(emp: string): number {
+      let total = 0;
+      this.spreadsheetData.forEach((workType: SpreadsheetRow) => {
+        total += this.getTotalHoursForEmployee(workType.work_type, emp);
+      });
+      return total;
+    }
 
   getTotalHoursForDate(workType: string, date: string): number {
     const row = this.spreadsheetData.find(r => r.work_type === workType);

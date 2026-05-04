@@ -135,7 +135,7 @@
         <div *ngFor="let emp of employees" class="emp-total-card">
           <div class="emp-name">{{ emp }}</div>
           <div class="emp-total-hours">
-            {{ this.spreadsheetData.reduce((sum, wt) => sum + getTotalHoursForEmployee(wt.work_type, emp), 0).toFixed(1) }}
+            {{ getEmployeeTotalHours(emp).toFixed(1) }}
           </div>
           <span>hours</span>
         </div>
